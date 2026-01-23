@@ -61,4 +61,21 @@ public class UserController {
                 .map(user -> ResponseEntity.ok(UserResponse.from(user)))
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    @Operation(summary = "Delete current user (soft delete)", 
+               description = "Soft deletes the authenticated user's account. The account will be marked as DELETED but data is preserved.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "User account deleted successfully"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated")
+    })
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteCurrentUser() {
+        User user = authenticatedUser.getCurrentUser();
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+        
+        userService.softDelete(user.getId());
+        return ResponseEntity.noContent().build();
+    }
 }
