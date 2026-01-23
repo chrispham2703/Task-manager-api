@@ -15,23 +15,35 @@ import java.util.UUID;
 public class JwtUtil {
 
     private final SecretKey secretKey;
-    private final long expirationMs;
+    private final long accessTokenExpirationMs;
+    private final long refreshTokenExpirationMs;
 
     public JwtUtil(
             @Value("${jwt.secret:mySecretKeyForJWTTokenGenerationMustBeAtLeast256BitsLong}") String secret,
-            @Value("${jwt.expiration-ms:86400000}") long expirationMs
+            @Value("${jwt.expiration-ms:86400000}") long accessTokenExpirationMs,
+            @Value("${jwt.refresh-expiration-ms:604800000}") long refreshTokenExpirationMs
     ) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.expirationMs = expirationMs;
+        this.accessTokenExpirationMs = accessTokenExpirationMs;
+        this.refreshTokenExpirationMs = refreshTokenExpirationMs;
     }
 
-    public String generateToken(UUID userId, String email) {
+    public String generateAccessToken(UUID userId, String email) {
+        return generateToken(userId, email, accessTokenExpirationMs, "access");
+    }
+
+    public String generateRefreshToken(UUID userId, String email) {
+        return generateToken(userId, email, refreshTokenExpirationMs, "refresh");
+    }
+
+    private String generateToken(UUID userId, String email, long expirationMs, String tokenType) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("email", email)
+                .claim("type", tokenType)
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(secretKey)
@@ -48,10 +60,31 @@ public class JwtUtil {
         return claims.get("email", String.class);
     }
 
+    public String getTokenType(String token) {
+        Claims claims = parseToken(token);
+        return claims.get("type", String.class);
+    }
+
     public boolean validateToken(String token) {
         try {
             parseToken(token);
             return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean isAccessToken(String token) {
+        try {
+            return "access".equals(getTokenType(token));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean isRefreshToken(String token) {
+        try {
+            return "refresh".equals(getTokenType(token));
         } catch (Exception e) {
             return false;
         }
@@ -65,7 +98,20 @@ public class JwtUtil {
                 .getPayload();
     }
 
+    public long getAccessTokenExpirationMs() {
+        return accessTokenExpirationMs;
+    }
+
+    public long getRefreshTokenExpirationMs() {
+        return refreshTokenExpirationMs;
+    }
+
+    // Backward compatibility
+    public String generateToken(UUID userId, String email) {
+        return generateAccessToken(userId, email);
+    }
+
     public long getExpirationMs() {
-        return expirationMs;
+        return accessTokenExpirationMs;
     }
 }

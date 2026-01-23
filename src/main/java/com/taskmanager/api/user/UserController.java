@@ -1,6 +1,10 @@
 package com.taskmanager.api.user;
 
 import com.taskmanager.api.security.AuthenticatedUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -8,6 +12,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users")
+@Tag(name = "Users", description = "User management endpoints")
 public class UserController {
 
     private final UserService userService;
@@ -18,9 +23,11 @@ public class UserController {
         this.authenticatedUser = authenticatedUser;
     }
 
-    /**
-     * Get current authenticated user's profile
-     */
+    @Operation(summary = "Get current user", description = "Returns the profile of the authenticated user")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User profile retrieved"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated")
+    })
     @GetMapping("/me")
     public ResponseEntity<UserResponse> getCurrentUser() {
         User user = authenticatedUser.getCurrentUser();
@@ -30,14 +37,16 @@ public class UserController {
         return ResponseEntity.ok(UserResponse.from(user));
     }
 
-    /**
-     * Get user by ID (only for admin or self)
-     */
+    @Operation(summary = "Get user by ID", description = "Returns a user profile (only own profile or admin)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User found"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated"),
+            @ApiResponse(responseCode = "404", description = "User not found or not authorized")
+    })
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUser(@PathVariable UUID id) {
         User currentUser = authenticatedUser.getCurrentUser();
         
-        // Users can only view their own profile (unless admin)
         if (currentUser == null) {
             return ResponseEntity.status(401).build();
         }

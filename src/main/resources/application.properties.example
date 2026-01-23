@@ -1,6 +1,56 @@
+# ===========================================
+# Task Manager API - Configuration Template
+# ===========================================
+# Copy this file to application.properties and configure your settings
+
 spring.application.name=task-manager-api
+
+# ===========================================
+# Database Configuration
+# ===========================================
 spring.datasource.url=jdbc:postgresql://localhost:5432/task_manager
 spring.datasource.username=postgres
-spring.datasource.password=Chang_Your_Password_Here
+spring.datasource.password=your_password_here
 spring.datasource.driver-class-name=org.postgresql.Driver
-spring.jpa.hibernate.ddl-auto=update
+
+# ===========================================
+# JPA/Hibernate Configuration
+# ===========================================
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.properties.hibernate.jdbc.time_zone=UTC
+spring.jpa.open-in-view=false
+
+# ===========================================
+# Flyway Configuration
+# ===========================================
+spring.flyway.enabled=true
+spring.flyway.locations=classpath:db/migration
+
+# ===========================================
+# Actuator Configuration
+# ===========================================
+management.endpoints.web.exposure.include=health,info,metrics
+management.endpoint.health.show-details=when_authorized
+
+# ===========================================
+# Logging
+# ===========================================
+logging.level.com.taskmanager.api=INFO
+logging.level.org.springframework.web=INFO
+logging.level.org.flywaydb=INFO
+
+# ===========================================
+# JWT Configuration
+# ===========================================
+# IMPORTANT: Change this secret in production!
+# Must be at least 256 bits (32 characters)
+jwt.secret=CHANGE_THIS_TO_A_SECURE_SECRET_KEY_AT_LEAST_256_BITS_LONG
+jwt.expiration-ms=86400000
+jwt.refresh-expiration-ms=604800000
+
+# ===========================================
+# OpenAPI/Swagger Configuration
+# ===========================================
+springdoc.api-docs.path=/v3/api-docs
+springdoc.swagger-ui.path=/swagger-ui.html
+springdoc.swagger-ui.operationsSorter=method

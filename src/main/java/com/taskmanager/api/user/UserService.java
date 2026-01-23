@@ -48,6 +48,11 @@ public class UserService {
         return userRepository.findActiveByEmail(email);
     }
 
+    public Optional<User> findActiveById(UUID id) {
+        return userRepository.findById(id)
+                .filter(user -> user.getStatus() == UserStatus.ACTIVE);
+    }
+
     @Transactional
     public void softDelete(UUID userId) {
         userRepository.findById(userId).ifPresent(user -> {
