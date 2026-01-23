@@ -1,0 +1,6 @@
+spring.application.name=task-manager-api
+spring.datasource.url=jdbc:postgresql://localhost:5432/task_manager
+spring.datasource.username=postgres
+spring.datasource.password=Chang_Your_Password_Here
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.hibernate.ddl-auto=update
