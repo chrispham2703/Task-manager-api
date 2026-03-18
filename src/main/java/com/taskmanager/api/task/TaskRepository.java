@@ -11,24 +11,24 @@ import java.util.UUID;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
 
-    @Query("SELECT t FROM Task t WHERE t.owner.id = :ownerId AND t.owner.status = 'ACTIVE'")
+    @Query("SELECT t FROM Task t WHERE t.owner.id = :ownerId AND t.status != 'DELETED' AND t.owner.status = 'ACTIVE'")
     Page<Task> findAllByOwnerId(@Param("ownerId") UUID ownerId, Pageable pageable);
 
-    @Query("SELECT t FROM Task t WHERE t.owner.id = :ownerId AND t.status = :status AND t.owner.status = 'ACTIVE'")
+    @Query("SELECT t FROM Task t WHERE t.owner.id = :ownerId AND t.status = :status AND t.status != 'DELETED' AND t.owner.status = 'ACTIVE'")
     Page<Task> findAllByOwnerIdAndStatus(
             @Param("ownerId") UUID ownerId,
             @Param("status") TaskStatus status,
             Pageable pageable
     );
 
-    @Query("SELECT t FROM Task t WHERE t.owner.id = :ownerId AND t.priority = :priority AND t.owner.status = 'ACTIVE'")
+    @Query("SELECT t FROM Task t WHERE t.owner.id = :ownerId AND t.priority = :priority AND t.status != 'DELETED' AND t.owner.status = 'ACTIVE'")
     Page<Task> findAllByOwnerIdAndPriority(
             @Param("ownerId") UUID ownerId,
             @Param("priority") TaskPriority priority,
             Pageable pageable
     );
 
-    @Query("SELECT t FROM Task t WHERE t.owner.id = :ownerId AND t.status = :status AND t.priority = :priority AND t.owner.status = 'ACTIVE'")
+    @Query("SELECT t FROM Task t WHERE t.owner.id = :ownerId AND t.status = :status AND t.priority = :priority AND t.status != 'DELETED' AND t.owner.status = 'ACTIVE'")
     Page<Task> findAllByOwnerIdAndStatusAndPriority(
             @Param("ownerId") UUID ownerId,
             @Param("status") TaskStatus status,
@@ -36,7 +36,7 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
             Pageable pageable
     );
 
-    @Query("SELECT t FROM Task t WHERE t.id = :id AND t.owner.id = :ownerId")
+    @Query("SELECT t FROM Task t WHERE t.id = :id AND t.owner.id = :ownerId AND t.status != 'DELETED'")
     Optional<Task> findByIdAndOwnerId(@Param("id") UUID id, @Param("ownerId") UUID ownerId);
 
     boolean existsByIdAndOwnerId(UUID id, UUID ownerId);

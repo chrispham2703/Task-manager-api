@@ -47,6 +47,14 @@ public class Task extends AuditableEntity {
         return owner != null && owner.getId().equals(userId);
     }
 
+    public void softDelete() {
+        this.status = TaskStatus.DELETED;
+    }
+
+    public boolean isDeleted() {
+        return this.status == TaskStatus.DELETED;
+    }
+
     public UUID getId() {
         return id;
     }

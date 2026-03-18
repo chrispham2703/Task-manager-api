@@ -82,6 +82,7 @@ public class TaskService {
     public void deleteTask(UUID taskId, UUID ownerId) {
         Task task = taskRepository.findByIdAndOwnerId(taskId, ownerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
-        taskRepository.delete(task);
+        task.softDelete();
+        taskRepository.save(task); 
     }
 }
