@@ -270,16 +270,19 @@ class TaskServiceTest {
     class DeleteTask {
 
         @Test
-        @DisplayName("should delete task successfully")
+        @DisplayName("should soft delete task successfully")
         void shouldDeleteTask() {
             // Given
             when(taskRepository.findByIdAndOwnerId(taskId, userId)).thenReturn(Optional.of(testTask));
+            when(taskRepository.save(any(Task.class))).thenAnswer(i -> i.getArgument(0));
 
             // When
             taskService.deleteTask(taskId, userId);
 
             // Then
-            verify(taskRepository).delete(testTask);
+            verify(taskRepository).save(testTask);
+            assertThat(testTask.getStatus()).isEqualTo(TaskStatus.DELETED);
+            verify(taskRepository, never()).delete(any());
         }
 
         @Test
