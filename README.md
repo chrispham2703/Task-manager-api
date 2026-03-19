@@ -6,7 +6,7 @@ A **production-grade** RESTful API for task management built with Spring Boot 3.
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-green)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
-
+[![CI](https://github.com/chrispham2703/Task-manager-api/actions/workflows/ci.yml/badge.svg)](https://github.com/chrispham2703/Task-manager-api/actions/workflows/ci.yml)
 ## 🌟 Features
 
 ### Authentication & Security
