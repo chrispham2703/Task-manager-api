@@ -35,3 +35,6 @@ build/
 # Spring Boot secrets
 src/main/resources/application.properties
 src/main/resources/application-*.properties
+
+# Local environment variables (do not commit secrets)
+.env

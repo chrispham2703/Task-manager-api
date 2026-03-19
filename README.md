@@ -58,7 +58,8 @@ docker compose up -d
 ### 3. Configure application
 ```bash
 cp src/main/resources/application.properties.example src/main/resources/application.properties
-# Edit application.properties with your settings
+# Option 1: Edit `application.properties`
+# Option 2: Export env vars (see `.env.example`) and keep `application.properties` as-is
 ```
 
 ### 4. Run the application
