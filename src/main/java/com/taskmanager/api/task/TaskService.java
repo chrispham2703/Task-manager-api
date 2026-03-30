@@ -27,11 +27,16 @@ public class TaskService {
         User owner = userRepository.findById(ownerId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        TaskStatus status = request.getStatus() != null ? request.getStatus() : TaskStatus.TODO;
+        if (status == TaskStatus.DELETED) {
+            throw new IllegalArgumentException("Cannot create a task with DELETED status");
+        }
+
         Task task = new Task();
         task.setOwner(owner);
         task.setTitle(request.getTitle());
         task.setDescription(request.getDescription());
-        task.setStatus(request.getStatus() != null ? request.getStatus() : TaskStatus.TODO);
+        task.setStatus(status);
         task.setPriority(request.getPriority() != null ? request.getPriority() : TaskPriority.MEDIUM);
         task.setDueDate(request.getDueDate());
 
@@ -66,6 +71,9 @@ public class TaskService {
             task.setDescription(request.getDescription());
         }
         if (request.getStatus() != null) {
+            if (request.getStatus() == TaskStatus.DELETED) {
+                throw new IllegalArgumentException("Cannot set task status to DELETED; use DELETE endpoint instead");
+            }
             task.setStatus(request.getStatus());
         }
         if (request.getPriority() != null) {

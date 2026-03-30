@@ -1,10 +1,12 @@
 package com.taskmanager.api.user;
 
+import com.taskmanager.api.common.exception.ErrorResponse;
 import com.taskmanager.api.security.AuthenticatedUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,10 +31,16 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Not authenticated")
     })
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentUser() {
+    public ResponseEntity<?> getCurrentUser() {
         User user = authenticatedUser.getCurrentUser();
         if (user == null) {
-            return ResponseEntity.status(401).build();
+            ErrorResponse error = new ErrorResponse(
+                    HttpStatus.UNAUTHORIZED.value(),
+                    "Unauthorized",
+                    "Not authenticated",
+                    "/api/users/me"
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
         return ResponseEntity.ok(UserResponse.from(user));
     }
@@ -44,11 +52,17 @@ public class UserController {
             @ApiResponse(responseCode = "404", description = "User not found or not authorized")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> getUser(@PathVariable UUID id) {
+    public ResponseEntity<?> getUser(@PathVariable UUID id) {
         User currentUser = authenticatedUser.getCurrentUser();
-        
+
         if (currentUser == null) {
-            return ResponseEntity.status(401).build();
+            ErrorResponse error = new ErrorResponse(
+                    HttpStatus.UNAUTHORIZED.value(),
+                    "Unauthorized",
+                    "Not authenticated",
+                    "/api/users/" + id
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
         
         // Check if requesting own profile or is admin
@@ -69,10 +83,16 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Not authenticated")
     })
     @DeleteMapping("/me")
-    public ResponseEntity<Void> deleteCurrentUser() {
+    public ResponseEntity<?> deleteCurrentUser() {
         User user = authenticatedUser.getCurrentUser();
         if (user == null) {
-            return ResponseEntity.status(401).build();
+            ErrorResponse error = new ErrorResponse(
+                    HttpStatus.UNAUTHORIZED.value(),
+                    "Unauthorized",
+                    "Not authenticated",
+                    "/api/users/me"
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
         
         userService.softDelete(user.getId());

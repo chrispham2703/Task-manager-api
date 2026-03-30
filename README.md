@@ -27,8 +27,9 @@ A **production-grade** RESTful API for task management built with Spring Boot 3.
 - **Ownership enforcement** at service layer
 - Cross-user isolation (secure 404 response)
 - Pagination, filtering, and sorting
-- Status workflow (TODO → IN_PROGRESS → DONE)
+- Status workflow (TODO → IN_PROGRESS → DONE); soft-deleted tasks marked as DELETED
 - Priority levels (LOW, MEDIUM, HIGH)
+- **Soft-delete** for tasks (DELETE endpoint marks task as DELETED; data preserved but excluded from queries)
 
 ### Infrastructure
 - **Flyway** database migrations (no auto-DDL)
@@ -71,6 +72,36 @@ cp src/main/resources/application.properties.example src/main/resources/applicat
 - **API Base URL**: http://localhost:8080/api
 - **Swagger UI**: http://localhost:8080/swagger-ui.html
 - **Health Check**: http://localhost:8080/actuator/health
+
+## 📬 API Collection
+
+A complete [Postman collection](postman/Task-Manager-API.postman_collection.json) is included for testing and demo purposes.
+
+### Setup
+1. Import `postman/Task-Manager-API.postman_collection.json` into Postman
+2. Import `postman/Task-Manager-API.postman_environment.json` as environment
+3. Select **"Task Manager API - Local"** environment
+4. Make sure the API is running at `http://localhost:8080`
+
+### Folders
+
+| Folder | Purpose | How to run |
+|--------|---------|------------|
+| **1. Demo Flow** | Full auth → CRUD → ownership isolation → refresh → cleanup | Collection Runner, run in order |
+| **2. Manual Operations** | Standalone requests with auto-saved variables | Run individually |
+| **3. Negative Cases** | Validates 401/400/404 error handling | Run individually or with Runner |
+
+### Variables
+
+| Variable | Description | Set by |
+|----------|-------------|--------|
+| `baseUrl` | API base URL | Environment (default: `http://localhost:8080`) |
+| `accessToken` | JWT access token | Auto-saved after login/register |
+| `refreshToken` | JWT refresh token | Auto-saved after login/register |
+| `taskId` | Last created task ID | Auto-saved after create |
+| `taskIdA` | User A's task ID (for ownership tests) | Auto-saved in Demo Flow |
+| `selectedTaskId` | Task to operate on in Manual Operations | Auto-saved from Get All Tasks |
+| `selectedTaskIndex` | Which task to select from list (0-based) | Set manually (default: `0`) |
 
 ## 📚 API Documentation
 
@@ -235,7 +266,7 @@ CREATE UNIQUE INDEX ux_users_email_lower ON users (lower(email));
 CREATE TABLE tasks (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id    UUID         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  title       VARCHAR(120) NOT NULL,
+  title       VARCHAR(255) NOT NULL,
   description TEXT,
   status      VARCHAR(20)  NOT NULL,
   priority    VARCHAR(20)  NOT NULL,
@@ -309,6 +340,67 @@ src/main/java/com/taskmanager/api/
 | `JWT_SECRET` | JWT signing key (min 256 bits) | - |
 | `JWT_EXPIRATION_MS` | Access token validity (ms) | `86400000` (24h) |
 | `JWT_REFRESH_EXPIRATION_MS` | Refresh token validity (ms) | `604800000` (7d) |
+
+## ⚠️ Error Responses
+
+All error responses follow a consistent JSON format:
+
+### 400 Validation Error
+```json
+{
+  "timestamp": "2026-01-23T10:00:00Z",
+  "status": 400,
+  "error": "Validation Failed",
+  "message": "Request validation failed",
+  "path": "/api/tasks",
+  "validationErrors": {
+    "title": "Title is required",
+    "email": "Invalid email format"
+  }
+}
+```
+
+### 401 Unauthorized
+```json
+{
+  "timestamp": "2026-01-23T10:00:00Z",
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "Invalid email or password",
+  "path": "/api/auth/login"
+}
+```
+
+### 404 Not Found
+```json
+{
+  "timestamp": "2026-01-23T10:00:00Z",
+  "status": 404,
+  "error": "Not Found",
+  "message": "Task not found",
+  "path": "/api/tasks/550e8400-e29b-41d4-a716-446655440001"
+}
+```
+
+### 429 Too Many Requests
+```json
+{
+  "error": "Too many requests",
+  "message": "Rate limit exceeded. Please try again later."
+}
+```
+
+## 🏗️ Engineering Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| **UUID primary keys** | Non-sequential IDs prevent enumeration attacks and information leakage about entity count/creation order |
+| **404 instead of 403 for ownership** | Returning 403 confirms the resource exists; 404 reveals nothing, preventing resource discovery by unauthorized users |
+| **Flyway over auto-DDL** | Explicit, versioned migrations ensure reproducible schema changes across environments and enable safe rollbacks |
+| **Soft delete for users and tasks** | Preserves data for audit trails and recovery; users marked DELETED cannot authenticate; tasks marked DELETED are excluded from all queries |
+| **JWT + refresh token** | Stateless access tokens reduce DB lookups per request; refresh tokens allow long sessions without long-lived access tokens; only access tokens are accepted for API calls |
+| **BCrypt (cost 10)** | Industry-standard adaptive hashing; cost factor 10 balances security and latency for auth endpoints |
+| **Rate limiting per IP/user** | Auth endpoints (10 req/min) prevent credential stuffing; API endpoints (100 req/min) prevent abuse while allowing normal usage |
 
 ## 🤝 Contributing
 

@@ -1,5 +1,6 @@
 package com.taskmanager.api.user;
 
+import com.taskmanager.api.common.exception.ErrorResponse;
 import com.taskmanager.api.security.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -40,12 +41,18 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Invalid credentials")
     })
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         User user = userService.findActiveByEmail(request.getEmail())
                 .orElse(null);
 
         if (user == null || !userService.verifyPassword(user, request.getPassword())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            ErrorResponse error = new ErrorResponse(
+                    HttpStatus.UNAUTHORIZED.value(),
+                    "Unauthorized",
+                    "Invalid email or password",
+                    "/api/auth/login"
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
 
         return ResponseEntity.ok(createLoginResponse(user));
@@ -57,18 +64,30 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Invalid or expired refresh token")
     })
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+    public ResponseEntity<?> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         String refreshToken = request.getRefreshToken();
 
         if (!jwtUtil.validateToken(refreshToken) || !jwtUtil.isRefreshToken(refreshToken)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            ErrorResponse error = new ErrorResponse(
+                    HttpStatus.UNAUTHORIZED.value(),
+                    "Unauthorized",
+                    "Invalid or expired refresh token",
+                    "/api/auth/refresh"
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
 
         var userId = jwtUtil.getUserIdFromToken(refreshToken);
         User user = userService.findActiveById(userId).orElse(null);
 
         if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            ErrorResponse error = new ErrorResponse(
+                    HttpStatus.UNAUTHORIZED.value(),
+                    "Unauthorized",
+                    "User not found or inactive",
+                    "/api/auth/refresh"
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
 
         return ResponseEntity.ok(createLoginResponse(user));

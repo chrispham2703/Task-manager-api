@@ -23,15 +23,4 @@ public record LoginResponse(
         );
     }
 
-    // Backward compatibility - will be removed
-    public static LoginResponse of(String accessToken, long expiresInMs, User user) {
-        return new LoginResponse(
-                accessToken,
-                null,
-                "Bearer",
-                expiresInMs / 1000,
-                0,
-                UserResponse.from(user)
-        );
-    }
 }
