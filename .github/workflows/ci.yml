@@ -52,7 +52,7 @@ jobs:
               exit 0
             fi
             echo "App not ready yet. Retrying in 5 seconds..."
-            sleep 5
+            sleep 1010
           done
           echo "App failed to become healthy in time."
           docker compose logs
