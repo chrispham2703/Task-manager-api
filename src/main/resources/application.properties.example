@@ -49,6 +49,11 @@ jwt.expiration-ms=${JWT_EXPIRATION_MS:86400000}
 jwt.refresh-expiration-ms=${JWT_REFRESH_EXPIRATION_MS:604800000}
 
 # ===========================================
+# CORS Configuration
+# ===========================================
+cors.allowed-origins=${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+
+# ===========================================
 # OpenAPI/Swagger Configuration
 # ===========================================
 springdoc.api-docs.path=/v3/api-docs

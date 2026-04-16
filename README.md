@@ -33,10 +33,18 @@ A **production-grade** RESTful API for task management built with Spring Boot 3.
 
 ### Infrastructure
 - **Flyway** database migrations (no auto-DDL)
-- **Docker Compose** for local development
+- **Docker Compose** for local development (DB + App with health checks)
+- **Multi-stage Dockerfile** for optimized production images
 - **Spring Actuator** for health checks and metrics
 - **OpenAPI/Swagger** documentation
-- Environment-based configuration
+- **CORS** configured and environment-driven
+- Environment-based configuration (12-factor app)
+
+### CI/CD Pipeline (GitHub Actions)
+- **Unit tests** with JaCoCo coverage reports
+- **Docker image build** verification
+- **API integration tests** via Newman (Postman CLI) against real Docker stack
+- **OWASP Dependency-Check** for CVE scanning
 
 ## 🚀 Quick Start
 
@@ -289,8 +297,20 @@ CREATE INDEX ix_tasks_owner_id_due_date ON tasks (owner_id, due_date);
 
 ### Run with coverage
 ```bash
-./mvnw test jacoco:report
-# Report available at target/site/jacoco/index.html
+./mvnw clean verify
+# JaCoCo report generated at target/site/jacoco/index.html
+```
+
+### Run full stack (Docker)
+```bash
+docker compose up -d --build
+# App: http://localhost:8080  |  Swagger: http://localhost:8080/swagger-ui.html
+# Postgres: localhost:5433
+
+# Run API tests
+newman run postman/Task-Manager-API.postman_collection.json \
+  -e postman/Task-Manager-API.postman_environment.json \
+  --delay-request 200
 ```
 
 ## 📁 Project Structure
@@ -401,6 +421,20 @@ All error responses follow a consistent JSON format:
 | **JWT + refresh token** | Stateless access tokens reduce DB lookups per request; refresh tokens allow long sessions without long-lived access tokens; only access tokens are accepted for API calls |
 | **BCrypt (cost 10)** | Industry-standard adaptive hashing; cost factor 10 balances security and latency for auth endpoints |
 | **Rate limiting per IP/user** | Auth endpoints (10 req/min) prevent credential stuffing; API endpoints (100 req/min) prevent abuse while allowing normal usage |
+| **H2 for unit tests, Postgres for integration** | Fast test cycles locally; Newman + Docker Compose validates real DB behavior in CI |
+| **Multi-stage Docker build** | Separate build/runtime stages keep production image small (~200 MB JRE vs ~800 MB Maven SDK) |
+| **CORS configurable via properties** | `cors.allowed-origins` env var allows different origins per environment without code changes |
+
+## ⚖️ Trade-offs & Known Limitations
+
+| Area | Current approach | Trade-off |
+|------|-----------------|-----------|
+| **Token revocation** | JWT is stateless — no server-side revocation | If a refresh token leaks, it remains valid until expiry. Production fix: add a token blocklist (Redis) or short-lived access + DB-backed refresh |
+| **Rate limit key** | IP for auth, `Authorization` hash for API | Users behind shared NAT hit the same bucket; hash of auth header changes on token refresh. Better: rate-limit by `userId` from JWT claims |
+| **H2 vs Postgres in tests** | Unit tests use H2 with `MODE=PostgreSQL` | Some Postgres-specific behavior (e.g. `gen_random_uuid()`, partial indexes) is not tested in unit tests. Mitigated by Newman integration tests against real Postgres |
+| **No HTTPS in app** | Relies on reverse proxy / load balancer for TLS | App itself serves plain HTTP. Standard in container deployments (TLS terminates at ingress) but must be documented |
+| **ADMIN role** | Data model supports it, barely enforced | Only `GET /users/{id}` checks for ADMIN. Future: admin dashboard, user management endpoints |
+| **Soft-delete data growth** | Deleted records stay in DB forever | No cleanup/archive job. Production: add scheduled purge or move to archive table |
 
 ## 🤝 Contributing
 
